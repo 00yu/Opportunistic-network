@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry excluding="test/" kind="src" path=""/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/workspace/the-one-pitt-master/the-one-pitt-master/lib/DTNConsoleConnection.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/workspace/the-one-pitt-master/the-one-pitt-master/lib/ECLA.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/workspace/the-one-pitt-master/the-one-pitt-master/lib/junit-4.8.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Administrator/Desktop/workspace/the-one-pitt-master/the-one-pitt-master/lib/uncommons-maths-1.2.1.jar"/>
+	<classpathentry kind="output" path=""/>
+</classpath>

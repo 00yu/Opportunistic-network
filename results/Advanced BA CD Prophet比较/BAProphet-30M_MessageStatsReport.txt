@@ -1,0 +1,20 @@
+Message stats for scenario BAProphet-30M
+sim_time: 43200.1000
+created: 1461
+started: 45674
+relayed: 20469
+aborted: 25204
+dropped: 17272
+removed: 0
+delivered: 964
+delivery_prob: 0.6598
+response_prob: 0.0000
+overhead_ratio: 20.2334
+latency_avg: 7294.2894
+latency_med: 6764.4000
+hopcount_avg: 2.0124
+hopcount_med: 2
+buffertime_avg: 7464.5767
+buffertime_med: 7242.9000
+rtt_avg: NaN
+rtt_med: NaN

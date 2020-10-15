@@ -1,0 +1,20 @@
+Message stats for scenario Prophet-22000
+sim_time: 22000.1000
+created: 554
+started: 37983
+relayed: 25099
+aborted: 12882
+dropped: 23448
+removed: 0
+delivered: 257
+delivery_prob: 0.4639
+response_prob: 0.0000
+overhead_ratio: 96.6615
+latency_avg: 2940.2560
+latency_med: 2014.5000
+hopcount_avg: 2.7160
+hopcount_med: 3
+buffertime_avg: 1317.9606
+buffertime_med: 731.5000
+rtt_avg: NaN
+rtt_med: NaN

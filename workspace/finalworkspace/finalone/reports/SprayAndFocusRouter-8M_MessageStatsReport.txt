@@ -1,0 +1,20 @@
+Message stats for scenario SprayAndFocusRouter-8M
+sim_time: 43200.1000
+created: 1463
+started: 51926
+relayed: 24139
+aborted: 27787
+dropped: 17406
+removed: 5921
+delivered: 794
+delivery_prob: 0.5427
+response_prob: 0.0000
+overhead_ratio: 29.4018
+latency_avg: 4285.2805
+latency_med: 3526.9000
+hopcount_avg: 3.2922
+hopcount_med: 3
+buffertime_avg: 2315.7067
+buffertime_med: 1650.3000
+rtt_avg: NaN
+rtt_med: NaN

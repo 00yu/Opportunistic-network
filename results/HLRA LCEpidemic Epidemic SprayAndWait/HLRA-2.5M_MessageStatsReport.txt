@@ -1,0 +1,20 @@
+Message stats for scenario HLRA-2.5M
+sim_time: 43200.1000
+created: 432
+started: 34351
+relayed: 29170
+aborted: 5179
+dropped: 29110
+removed: 0
+delivered: 157
+delivery_prob: 0.3634
+response_prob: 0.0000
+overhead_ratio: 184.7962
+latency_avg: 2239.6484
+latency_med: 2087.3000
+hopcount_avg: 4.9936
+hopcount_med: 5
+buffertime_avg: 524.8815
+buffertime_med: 295.3000
+rtt_avg: NaN
+rtt_med: NaN

@@ -1,0 +1,20 @@
+Message stats for scenario nSAW-45M
+sim_time: 43200.1000
+created: 1463
+started: 55001
+relayed: 27139
+aborted: 27861
+dropped: 17226
+removed: 4244
+delivered: 1224
+delivery_prob: 0.8366
+response_prob: 0.0000
+overhead_ratio: 21.1724
+latency_avg: 4127.3071
+latency_med: 3413.9000
+hopcount_avg: 3.0033
+hopcount_med: 3
+buffertime_avg: 8387.2177
+buffertime_med: 9379.2000
+rtt_avg: NaN
+rtt_med: NaN

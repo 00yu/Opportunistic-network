@@ -1,0 +1,20 @@
+Message stats for scenario LCEpidemic-5M
+sim_time: 43200.1000
+created: 432
+started: 47551
+relayed: 39066
+aborted: 8482
+dropped: 38643
+removed: 0
+delivered: 237
+delivery_prob: 0.5486
+response_prob: 0.0000
+overhead_ratio: 163.8354
+latency_avg: 2372.5637
+latency_med: 2377.3000
+hopcount_avg: 5.0633
+hopcount_med: 5
+buffertime_avg: 751.7450
+buffertime_med: 523.9000
+rtt_avg: NaN
+rtt_med: NaN

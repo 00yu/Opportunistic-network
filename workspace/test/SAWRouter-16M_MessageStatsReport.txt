@@ -1,0 +1,20 @@
+Message stats for scenario SAWRouter-16M
+sim_time: 43200.1000
+created: 1463
+started: 50423
+relayed: 22912
+aborted: 27510
+dropped: 2292
+removed: 19114
+delivered: 1263
+delivery_prob: 0.8633
+response_prob: 0.0000
+overhead_ratio: 17.1409
+latency_avg: 4792.1498
+latency_med: 4212.1000
+hopcount_avg: 2.9818
+hopcount_med: 3
+buffertime_avg: 2849.3157
+buffertime_med: 2387.2000
+rtt_avg: NaN
+rtt_med: NaN

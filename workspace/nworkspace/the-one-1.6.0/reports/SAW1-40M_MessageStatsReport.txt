@@ -1,0 +1,20 @@
+Message stats for scenario SAW1-40M
+sim_time: 43200.1000
+created: 1463
+started: 53332
+relayed: 25637
+aborted: 27694
+dropped: 19848
+removed: 0
+delivered: 1258
+delivery_prob: 0.8599
+response_prob: 0.0000
+overhead_ratio: 19.3792
+latency_avg: 4146.2570
+latency_med: 3466.0000
+hopcount_avg: 2.7186
+hopcount_med: 3
+buffertime_avg: 9431.1457
+buffertime_med: 9683.8000
+rtt_avg: NaN
+rtt_med: NaN

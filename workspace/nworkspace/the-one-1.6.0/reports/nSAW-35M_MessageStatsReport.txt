@@ -1,0 +1,20 @@
+Message stats for scenario nSAW-35M
+sim_time: 43200.1000
+created: 1463
+started: 54903
+relayed: 27016
+aborted: 27886
+dropped: 17740
+removed: 4291
+delivered: 1215
+delivery_prob: 0.8305
+response_prob: 0.0000
+overhead_ratio: 21.2354
+latency_avg: 4104.2656
+latency_med: 3401.7000
+hopcount_avg: 2.9959
+hopcount_med: 3
+buffertime_avg: 7490.9744
+buffertime_med: 7835.1000
+rtt_avg: NaN
+rtt_med: NaN

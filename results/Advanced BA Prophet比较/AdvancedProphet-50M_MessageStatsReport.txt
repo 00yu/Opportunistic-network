@@ -1,0 +1,20 @@
+Message stats for scenario AdvancedProphet-50M
+sim_time: 43200.1000
+created: 1461
+started: 52848
+relayed: 25851
+aborted: 26995
+dropped: 22175
+removed: 0
+delivered: 904
+delivery_prob: 0.6188
+response_prob: 0.0000
+overhead_ratio: 27.5962
+latency_avg: 7386.1994
+latency_med: 6753.4000
+hopcount_avg: 2.0785
+hopcount_med: 2
+buffertime_avg: 7069.4873
+buffertime_med: 6432.9000
+rtt_avg: NaN
+rtt_med: NaN

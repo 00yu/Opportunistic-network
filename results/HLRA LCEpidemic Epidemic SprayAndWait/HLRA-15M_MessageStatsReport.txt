@@ -1,0 +1,20 @@
+Message stats for scenario HLRA-15M
+sim_time: 43200.1000
+created: 432
+started: 57447
+relayed: 47440
+aborted: 10002
+dropped: 45932
+removed: 0
+delivered: 356
+delivery_prob: 0.8241
+response_prob: 0.0000
+overhead_ratio: 132.2584
+latency_avg: 2255.5626
+latency_med: 2169.6000
+hopcount_avg: 4.0028
+hopcount_med: 4
+buffertime_avg: 1620.4312
+buffertime_med: 1473.3000
+rtt_avg: NaN
+rtt_med: NaN

@@ -1,0 +1,20 @@
+Message stats for scenario PSAW-16M
+sim_time: 43200.1000
+created: 1463
+started: 26161
+relayed: 10107
+aborted: 16053
+dropped: 6631
+removed: 1174
+delivered: 1173
+delivery_prob: 0.8018
+response_prob: 0.0000
+overhead_ratio: 7.6164
+latency_avg: 5179.6790
+latency_med: 4516.0000
+hopcount_avg: 2.3333
+hopcount_med: 2
+buffertime_avg: 9671.9801
+buffertime_med: 9746.2000
+rtt_avg: NaN
+rtt_med: NaN

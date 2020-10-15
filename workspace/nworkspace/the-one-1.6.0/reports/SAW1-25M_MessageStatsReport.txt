@@ -1,0 +1,20 @@
+Message stats for scenario SAW1-25M
+sim_time: 43200.1000
+created: 1463
+started: 52500
+relayed: 24863
+aborted: 27636
+dropped: 20940
+removed: 1
+delivered: 1199
+delivery_prob: 0.8195
+response_prob: 0.0000
+overhead_ratio: 19.7364
+latency_avg: 3827.5429
+latency_med: 3302.4000
+hopcount_avg: 2.7540
+hopcount_med: 3
+buffertime_avg: 6802.3182
+buffertime_med: 6552.5000
+rtt_avg: NaN
+rtt_med: NaN

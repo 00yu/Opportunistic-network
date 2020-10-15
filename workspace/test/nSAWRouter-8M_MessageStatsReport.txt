@@ -1,0 +1,20 @@
+Message stats for scenario nSAWRouter-8M
+sim_time: 43200.1000
+created: 1463
+started: 48643
+relayed: 21679
+aborted: 26963
+dropped: 10801
+removed: 10162
+delivered: 1027
+delivery_prob: 0.7020
+response_prob: 0.0000
+overhead_ratio: 20.1091
+latency_avg: 3993.3425
+latency_med: 3481.9000
+hopcount_avg: 3.1918
+hopcount_med: 3
+buffertime_avg: 2108.4960
+buffertime_med: 1725.2000
+rtt_avg: NaN
+rtt_med: NaN

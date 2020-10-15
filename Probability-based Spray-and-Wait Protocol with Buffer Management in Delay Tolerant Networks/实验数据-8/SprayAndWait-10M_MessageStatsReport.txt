@@ -1,0 +1,20 @@
+Message stats for scenario SprayAndWait-10M
+sim_time: 43200.1000
+created: 1463
+started: 28561
+relayed: 10696
+aborted: 17864
+dropped: 9419
+removed: 0
+delivered: 989
+delivery_prob: 0.6760
+response_prob: 0.0000
+overhead_ratio: 9.8150
+latency_avg: 3770.9678
+latency_med: 3204.7000
+hopcount_avg: 2.4044
+hopcount_med: 2
+buffertime_avg: 6131.1136
+buffertime_med: 5586.3000
+rtt_avg: NaN
+rtt_med: NaN

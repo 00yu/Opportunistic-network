@@ -1,0 +1,20 @@
+Message stats for scenario Proposed-16M
+sim_time: 43200.1000
+created: 1463
+started: 40992
+relayed: 17563
+aborted: 23429
+dropped: 14879
+removed: 376
+delivered: 963
+delivery_prob: 0.6582
+response_prob: 0.0000
+overhead_ratio: 17.2378
+latency_avg: 5181.2422
+latency_med: 4604.7000
+hopcount_avg: 2.5826
+hopcount_med: 3
+buffertime_avg: 6106.8493
+buffertime_med: 5535.4000
+rtt_avg: NaN
+rtt_med: NaN

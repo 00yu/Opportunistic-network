@@ -1,0 +1,20 @@
+Message stats for scenario CDProphet-14000
+sim_time: 14000.0000
+created: 353
+started: 348
+relayed: 257
+aborted: 91
+dropped: 4
+removed: 0
+delivered: 138
+delivery_prob: 0.3909
+response_prob: 0.0000
+overhead_ratio: 0.8623
+latency_avg: 4114.0283
+latency_med: 3870.1000
+hopcount_avg: 1.0725
+hopcount_med: 1
+buffertime_avg: 10014.2750
+buffertime_med: 9939.9000
+rtt_avg: NaN
+rtt_med: NaN

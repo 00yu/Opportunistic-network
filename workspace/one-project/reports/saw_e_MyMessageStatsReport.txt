@@ -1,0 +1,20 @@
+Message stats for scenario saw_e
+sim_time: 21600.1000
+created: 358
+started: 31117
+relayed: 16840
+aborted: 14271
+dropped: 16024
+removed: 0
+delivered: 136
+delivery_prob: 0.3799
+response_prob: 0.0000
+overhead_ratio: 122.8235
+latency_avg: 4228.9419
+latency_med: 3017.9000
+hopcount_avg: 3.9559
+hopcount_med: 3
+buffertime_avg: 1072.7050
+buffertime_med: 628.7000
+msgTtl: 500
+bufferSize: 5

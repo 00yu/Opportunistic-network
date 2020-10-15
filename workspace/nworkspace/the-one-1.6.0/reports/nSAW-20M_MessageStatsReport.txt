@@ -1,0 +1,20 @@
+Message stats for scenario nSAW-20M
+sim_time: 43200.1000
+created: 1463
+started: 53962
+relayed: 26101
+aborted: 27860
+dropped: 18998
+removed: 4095
+delivered: 1140
+delivery_prob: 0.7792
+response_prob: 0.0000
+overhead_ratio: 21.8956
+latency_avg: 3946.4225
+latency_med: 3281.2000
+hopcount_avg: 3.0649
+hopcount_med: 3
+buffertime_avg: 5013.9332
+buffertime_med: 4612.6000
+rtt_avg: NaN
+rtt_med: NaN

@@ -1,0 +1,20 @@
+Message stats for scenario SAWRouter-6M
+sim_time: 43200.1000
+created: 1463
+started: 46237
+relayed: 20086
+aborted: 26150
+dropped: 13086
+removed: 6726
+delivered: 829
+delivery_prob: 0.5666
+response_prob: 0.0000
+overhead_ratio: 23.2292
+latency_avg: 3543.1109
+latency_med: 2897.2000
+hopcount_avg: 3.1725
+hopcount_med: 3
+buffertime_avg: 1768.1328
+buffertime_med: 1381.8000
+rtt_avg: NaN
+rtt_med: NaN

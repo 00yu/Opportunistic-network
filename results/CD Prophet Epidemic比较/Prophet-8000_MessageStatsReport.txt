@@ -1,0 +1,20 @@
+Message stats for scenario Prophet-8000
+sim_time: 8000.0000
+created: 201
+started: 10323
+relayed: 6657
+aborted: 3662
+dropped: 4987
+removed: 0
+delivered: 97
+delivery_prob: 0.4826
+response_prob: 0.0000
+overhead_ratio: 67.6289
+latency_avg: 1719.6773
+latency_med: 1443.5000
+hopcount_avg: 2.5876
+hopcount_med: 3
+buffertime_avg: 1032.1779
+buffertime_med: 751.3000
+rtt_avg: NaN
+rtt_med: NaN

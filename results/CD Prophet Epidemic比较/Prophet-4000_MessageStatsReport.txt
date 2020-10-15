@@ -1,0 +1,20 @@
+Message stats for scenario Prophet-4000
+sim_time: 4000.1000
+created: 100
+started: 3457
+relayed: 2164
+aborted: 1293
+dropped: 1026
+removed: 0
+delivered: 44
+delivery_prob: 0.4400
+response_prob: 0.0000
+overhead_ratio: 48.1818
+latency_avg: 1351.7364
+latency_med: 1439.5000
+hopcount_avg: 2.5455
+hopcount_med: 2
+buffertime_avg: 892.2179
+buffertime_med: 756.6000
+rtt_avg: NaN
+rtt_med: NaN

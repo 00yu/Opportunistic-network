@@ -1,0 +1,20 @@
+Message stats for scenario nSAWRouter-12M
+sim_time: 43200.1000
+created: 1463
+started: 50300
+relayed: 22765
+aborted: 27534
+dropped: 6002
+removed: 15473
+delivered: 1205
+delivery_prob: 0.8237
+response_prob: 0.0000
+overhead_ratio: 17.8921
+latency_avg: 4549.5621
+latency_med: 3961.4000
+hopcount_avg: 3.1270
+hopcount_med: 3
+buffertime_avg: 2606.5955
+buffertime_med: 2146.8000
+rtt_avg: NaN
+rtt_med: NaN

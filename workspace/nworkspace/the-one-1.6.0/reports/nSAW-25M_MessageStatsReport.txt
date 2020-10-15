@@ -1,0 +1,20 @@
+Message stats for scenario nSAW-25M
+sim_time: 43200.1000
+created: 1463
+started: 54456
+relayed: 26601
+aborted: 27854
+dropped: 18672
+removed: 4187
+delivered: 1166
+delivery_prob: 0.7970
+response_prob: 0.0000
+overhead_ratio: 21.8139
+latency_avg: 3930.5265
+latency_med: 3282.4000
+hopcount_avg: 3.0678
+hopcount_med: 3
+buffertime_avg: 5982.8556
+buffertime_med: 5811.0000
+rtt_avg: NaN
+rtt_med: NaN

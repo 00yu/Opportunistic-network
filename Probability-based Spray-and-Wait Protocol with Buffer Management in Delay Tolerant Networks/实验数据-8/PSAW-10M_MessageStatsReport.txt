@@ -1,0 +1,20 @@
+Message stats for scenario PSAW-10M
+sim_time: 43200.1000
+created: 1463
+started: 25308
+relayed: 9813
+aborted: 15494
+dropped: 7767
+removed: 808
+delivered: 992
+delivery_prob: 0.6781
+response_prob: 0.0000
+overhead_ratio: 8.8921
+latency_avg: 4226.6286
+latency_med: 3820.7000
+hopcount_avg: 2.3770
+hopcount_med: 2
+buffertime_avg: 6367.2734
+buffertime_med: 5852.3000
+rtt_avg: NaN
+rtt_med: NaN

@@ -1,0 +1,20 @@
+Message stats for scenario PSAW-8M
+sim_time: 43200.1000
+created: 1463
+started: 24693
+relayed: 9529
+aborted: 15164
+dropped: 7978
+removed: 728
+delivered: 906
+delivery_prob: 0.6193
+response_prob: 0.0000
+overhead_ratio: 9.5177
+latency_avg: 4051.1587
+latency_med: 3524.5000
+hopcount_avg: 2.3819
+hopcount_med: 2
+buffertime_avg: 5190.2281
+buffertime_med: 4602.9000
+rtt_avg: NaN
+rtt_med: NaN

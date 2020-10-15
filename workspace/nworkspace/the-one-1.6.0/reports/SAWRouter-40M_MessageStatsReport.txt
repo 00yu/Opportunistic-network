@@ -1,0 +1,20 @@
+Message stats for scenario SAWRouter-40M
+sim_time: 43200.1000
+created: 1463
+started: 47829
+relayed: 22098
+aborted: 25730
+dropped: 14631
+removed: 3918
+delivered: 948
+delivery_prob: 0.6480
+response_prob: 0.0000
+overhead_ratio: 22.3101
+latency_avg: 6005.8738
+latency_med: 5492.7000
+hopcount_avg: 2.7785
+hopcount_med: 3
+buffertime_avg: 6224.6442
+buffertime_med: 6006.3000
+rtt_avg: NaN
+rtt_med: NaN

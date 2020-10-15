@@ -1,0 +1,20 @@
+Message stats for scenario BAProphet-10M
+sim_time: 43200.1000
+created: 1461
+started: 35499
+relayed: 14562
+aborted: 20937
+dropped: 13561
+removed: 0
+delivered: 695
+delivery_prob: 0.4757
+response_prob: 0.0000
+overhead_ratio: 19.9525
+latency_avg: 5555.5938
+latency_med: 4671.5000
+hopcount_avg: 2.1410
+hopcount_med: 2
+buffertime_avg: 4682.1179
+buffertime_med: 3745.4000
+rtt_avg: NaN
+rtt_med: NaN

@@ -1,0 +1,305 @@
+/* 
+ * Copyright 2010 Aalto University, ComNet
+ * Released under GPLv3. See LICENSE.txt for details. 
+ */
+package routing;
+//加入ACK机制
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import core.Connection;
+import core.DTNHost;
+import core.Message;
+import core.Settings;
+import core.SimClock;
+
+/**
+ * Implementation of Spray and wait router as depicted in 
+ * <I>Spray and Wait: An Efficient Routing Scheme for Intermittently
+ * Connected Mobile Networks</I> by Thrasyvoulos Spyropoulus et al.
+ *
+ */
+public class pSAWRouter extends ActiveRouter {
+	/** IDs of the messages that are known to have reached the final dst */
+	private Set<String> ackedMessageIds;
+	/** delivery predictability initialization constant*/
+	public static final double P_INIT = 0.75;
+	/** delivery predictability transitivity scaling constant default value */
+	public static final double DEFAULT_BETA = 0.25;
+	public static final String BETA_S = "beta";
+	/** value of beta setting */
+	private double beta;
+	/** delivery predictability aging constant */
+	public static final double GAMMA = 0.98;
+	/** the value of nrof seconds in time unit -setting */
+	 int secondsInTimeUnit;
+	
+	/** identifier for the initial number of copies setting ({@value})*/ 
+	public static final String NROF_COPIES = "nrofCopies";
+	/** identifier for the binary-mode setting ({@value})*/ 
+	public static final String BINARY_MODE = "binaryMode";
+	/** SprayAndWait router's settings name space ({@value})*/ 
+	public static final String pSAW_NS = "pSAWRouter";
+	/** Message property key */
+	public static final String MSG_COUNT_PROPERTY = pSAW_NS + "." +
+		"copies";
+	
+	protected int initialNrofCopies;
+	protected boolean isBinary;
+
+	public pSAWRouter(Settings s) {
+		super(s);
+		Settings snwSettings = new Settings(pSAW_NS);
+		if (snwSettings.contains(BETA_S)) {
+			beta = snwSettings.getDouble(BETA_S);
+		}
+		else {
+			beta = DEFAULT_BETA;
+		}
+		initialNrofCopies = snwSettings.getInt(NROF_COPIES);
+		isBinary = snwSettings.getBoolean( BINARY_MODE);
+	}
+	
+	/**
+	 * Copy constructor.
+	 * @param r The router prototype where setting values are copied from
+	 */
+	protected pSAWRouter(pSAWRouter r) {
+		super(r);
+		this.initialNrofCopies = r.initialNrofCopies;
+		this.isBinary = r.isBinary;
+		this.ackedMessageIds=new HashSet<String>();
+	}
+	 public void changedConnection(Connection con) { 
+		 if (con.isUp()) {
+		 DTNHost otherHost = con.getOtherNode(getHost());//获得连接的对方主机
+		 /**
+		  * ACK表，也就是每个节点都有一张ACK表记录投递成功的消息的id
+		  * 当两个节点建立连接时，交换ack表做并集，然后各自删除自己缓存中和
+		  * ack表中对应的消息
+		  */
+		 checkAck(otherHost);
+		 /**
+		  * 更新效用值，主要是节点交换和更新历史相遇信息表
+		  */
+		 countUtility(otherHost);
+	     }
+	}
+		// 更新ACK表并删除多余副本
+		private void checkAck(DTNHost otherHost) {
+
+			MessageRouter mRouter = otherHost.getRouter();
+
+			assert mRouter instanceof MaxPropRouter : "MaxProp only works "
+					+ " with other routers of same type";
+			pSAWRouter otherRouter = (pSAWRouter) mRouter;
+
+			/* exchange ACKed message data */
+			this.ackedMessageIds.addAll(otherRouter.ackedMessageIds);
+			// otherRouter.ackedMessageIds.addAll(this.ackedMessageIds);
+
+			deleteAckedMessages();
+
+			// otherRouter.deleteAckedMessages();
+		}
+		/**
+		 * Deletes the messages from the message buffer that are known to be ACKed
+		 */
+		private void deleteAckedMessages() {
+			for (String id : this.ackedMessageIds) {
+				if (this.hasMessage(id) && !isSending(id)) {
+					this.deleteMessage(id, false);
+				}
+			}
+		}
+		/*
+		 * 更新效用值
+		 * (连接的两个节点同时被处理)
+		 */
+		private void countUtility(DTNHost otherHost) {
+			DTNHost sourceHost = getHost();// 本地主机
+			updateFinUtility(sourceHost, otherHost);// 主机更新效用表
+		}
+		/**
+		 * 更新FIN效用表。每个节点维护一张效用表，当两节点相遇时各自会在自己效用表中更新对方节点的效用值		
+		 */
+		public void updateFinUtility(DTNHost host,DTNHost other) {			
+			//更新本地节点的信息
+			updateFinUtilityItem(host,other);
+			//更新邻居节点的信息
+			updateFinUtilityItem(other,host);
+		}
+		//更新节点效用的方法
+				public void updateFinUtilityItem(DTNHost host,DTNHost other) {
+					//更新本节点的效用信息,坐标，时间，平均速度，平均方向，更新时间，通信范围？
+					HashMap<String, Double> dtnhash=host.getFinUtility().get(other);//获取本节点效用表中邻居节点信息
+					double count=updateDeliveryPredFor(host,other);//投递预测值
+					updateTransitivePreds(host,other);//更新传递预测值
+					HashMap<String,Double> newData=new HashMap<String,Double>();
+					newData.put("count",count);
+					host.setFinUtility(other, newData);//更新效用表		
+				}
+				//更新历史投递效用
+				private double updateDeliveryPredFor(DTNHost host,DTNHost other) {
+					double oldValue = getPredFor(host,other);//得到旧的投递值
+					double newValue = oldValue + (1 - oldValue) * 0.75;
+					return newValue;
+				}
+				//计算传递效率
+				public double getPredFor(DTNHost host,DTNHost other) {					
+					ageDeliveryPreds(host); // 建立连接时更新衰减投递预测值
+					HashMap<String, Double> tmpHost=host.getFinUtility().get(other);
+					if (tmpHost !=null) {
+						return tmpHost.get("count");
+					}else {
+						return 0;
+					}
+				}
+				//更新传递效率
+				private void ageDeliveryPreds(DTNHost host) {
+					double timeDiff = (SimClock.getTime() - host.getlastAgeUpdate()) / secondsInTimeUnit;
+//			       	System.out.println("可以更新"+timeDiff);]
+					if (timeDiff == 0) {
+					return;
+					}
+					double mult = Math.pow(0.98, timeDiff);
+					for (HashMap.Entry<DTNHost, HashMap<String,Double>>e : host.getFinUtility().entrySet()) {
+					e.getValue().put("count",e.getValue().get("count")*mult);
+					}//更新当前节点效用表中投递概率值
+					host.setlastAgeUpdate(SimClock.getTime());
+				}
+				//更新传递投递值
+				private void updateTransitivePreds(DTNHost host,DTNHost other) {			
+					double pForHost = getPredFor(host,other); // P(a,b)
+					HashMap<DTNHost, HashMap<String,Double>>  othersPreds = other.getFinUtility();//获得对方路由的投递预测值集合
+					for (Map.Entry<DTNHost, HashMap<String,Double>> e : othersPreds.entrySet()) {
+						if (e.getKey() == host) {
+							continue; // don't add yourself
+						}		
+						double pOld = getPredFor(host,e.getKey()); // P(a,c)_old
+						double pNew = pOld + ( 1 - pOld) * pForHost * e.getValue().get("count") * beta;//beta
+//						System.out.println("old"+e.getValue().get("count")+"::new"+pNew);
+						e.getValue().put("count",pNew);
+					}
+				}
+				//历史投递效用结束	
+				/***********/
+	@Override
+	public int receiveMessage(Message m, DTNHost from) {
+		return super.receiveMessage(m, from);
+	}
+	
+	@Override
+	public Message messageTransferred(String id, DTNHost from) {
+		Message msg = super.messageTransferred(id, from);
+		Integer nrofCopies = (Integer)msg.getProperty(MSG_COUNT_PROPERTY);
+		
+		assert nrofCopies != null : "Not a SnW message: " + msg;
+		
+		if (isBinary) {
+			/* in binary S'n'W the receiving node gets ceil(n/2) copies */
+			nrofCopies = (int)Math.ceil(nrofCopies/2.0);
+		}
+		else {
+			/* in standard S'n'W the receiving node gets only single copy */
+			nrofCopies = 1;
+		}
+		
+		msg.updateProperty(MSG_COUNT_PROPERTY, nrofCopies);
+		/* was this node the final recipient of the message? */
+		if (isDeliveredMessage(msg)) {
+			this.ackedMessageIds.add(id);
+		}
+		return msg;
+	}
+	
+	@Override 
+	public boolean createNewMessage(Message msg) {
+		makeRoomForNewMessage(msg.getSize());
+
+		msg.setTtl(this.msgTtl);
+		msg.addProperty(MSG_COUNT_PROPERTY, new Integer(initialNrofCopies));
+		addToMessages(msg, true);
+		return true;
+	}
+	
+	@Override
+	public void update() {
+		super.update();
+		if (!canStartTransfer() || isTransferring()) {
+			return; // nothing to transfer or is currently transferring 
+		}
+
+		/* try messages that could be delivered to final recipient */
+		if (exchangeDeliverableMessages() != null) {
+			return;
+		}
+		
+		/* create a list of SAWMessages that have copies left to distribute */
+		@SuppressWarnings(value = "unchecked")
+		List<Message> copiesLeft = sortByQueueMode(getMessagesWithCopiesLeft());
+		
+		if (copiesLeft.size() > 0) {
+			/* try to send those messages */
+			this.tryMessagesToConnections(copiesLeft, getConnections());
+		}
+	}
+	
+	/**
+	 * Creates and returns a list of messages this router is currently
+	 * carrying and still has copies left to distribute (nrof copies > 1).
+	 * @return A list of messages that have copies left
+	 */
+	protected List<Message> getMessagesWithCopiesLeft() {
+		List<Message> list = new ArrayList<Message>();
+
+		for (Message m : getMessageCollection()) {
+			Integer nrofCopies = (Integer)m.getProperty(MSG_COUNT_PROPERTY);
+			assert nrofCopies != null : "SnW message " + m + " didn't have " + 
+				"nrof copies property!";
+			if (nrofCopies > 1) {
+				list.add(m);
+			}
+		}
+		
+		return list;
+	}
+	
+	/**
+	 * Called just before a transfer is finalized (by 
+	 * {@link ActiveRouter#update()}).
+	 * Reduces the number of copies we have left for a message. 
+	 * In binary Spray and Wait, sending host is left with floor(n/2) copies,
+	 * but in standard mode, nrof copies left is reduced by one. 
+	 */
+	@Override
+	protected void transferDone(Connection con) {
+		Integer nrofCopies;
+		String msgId = con.getMessage().getId();
+		/* get this router's copy of the message */
+		Message msg = getMessage(msgId);
+
+		if (msg == null) { // message has been dropped from the buffer after..
+			return; // ..start of transfer -> no need to reduce amount of copies
+		}
+		
+		/* reduce the amount of copies left */
+		nrofCopies = (Integer)msg.getProperty(MSG_COUNT_PROPERTY);
+		if (isBinary) { 
+			nrofCopies /= 2;
+		}
+		else {
+			nrofCopies--;
+		}
+		msg.updateProperty(MSG_COUNT_PROPERTY, nrofCopies);
+	}
+	
+	@Override
+	public pSAWRouter replicate() {
+		return new pSAWRouter(this);
+	}
+}

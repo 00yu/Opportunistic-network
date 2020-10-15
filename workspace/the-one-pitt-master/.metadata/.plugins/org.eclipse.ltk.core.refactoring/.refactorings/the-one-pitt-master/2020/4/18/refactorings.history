@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;default_settings.txt&apos; to &apos;the-one-pitt-master&apos;&#x0D;&#x0A;- Original project: &apos;the-one-pitt-master&apos;&#x0D;&#x0A;- Destination element: &apos;the-one-pitt-master&apos;&#x0D;&#x0A;- Original element: &apos;default_settings.txt&apos;" description="Copy file" element1="default_settings.txt" files="1" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1588243353379" target="/the-one-pitt-master" units="0" version="1.0"/>
+</session>

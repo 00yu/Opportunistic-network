@@ -1,0 +1,20 @@
+Message stats for scenario nSAWRouter-6M
+sim_time: 43200.1000
+created: 1463
+started: 46582
+relayed: 20334
+aborted: 26247
+dropped: 13052
+removed: 6956
+delivered: 832
+delivery_prob: 0.5687
+response_prob: 0.0000
+overhead_ratio: 23.4399
+latency_avg: 3663.0294
+latency_med: 2887.1000
+hopcount_avg: 3.2885
+hopcount_med: 3
+buffertime_avg: 1759.9522
+buffertime_med: 1380.8000
+rtt_avg: NaN
+rtt_med: NaN

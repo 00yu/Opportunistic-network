@@ -1,0 +1,20 @@
+Message stats for scenario SAFRouter-2M
+sim_time: 43200.1000
+created: 1463
+started: 35306
+relayed: 13864
+aborted: 21442
+dropped: 10230
+removed: 4591
+delivered: 232
+delivery_prob: 0.1586
+response_prob: 0.0000
+overhead_ratio: 58.7586
+latency_avg: 2385.0233
+latency_med: 1534.3000
+hopcount_avg: 3.1767
+hopcount_med: 3
+buffertime_avg: 641.8040
+buffertime_med: 376.3000
+rtt_avg: NaN
+rtt_med: NaN

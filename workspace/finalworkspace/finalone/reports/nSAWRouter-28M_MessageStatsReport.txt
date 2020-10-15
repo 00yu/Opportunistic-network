@@ -1,0 +1,20 @@
+Message stats for scenario nSAWRouter-28M
+sim_time: 43200.1000
+created: 1463
+started: 51739
+relayed: 23890
+aborted: 27848
+dropped: 107
+removed: 22226
+delivered: 1277
+delivery_prob: 0.8729
+response_prob: 0.0000
+overhead_ratio: 17.7079
+latency_avg: 4843.7204
+latency_med: 4468.1000
+hopcount_avg: 2.9287
+hopcount_med: 3
+buffertime_avg: 2911.0928
+buffertime_med: 2415.9000
+rtt_avg: NaN
+rtt_med: NaN

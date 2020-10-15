@@ -1,0 +1,20 @@
+Message stats for scenario HLRA-30M
+sim_time: 43200.1000
+created: 432
+started: 53034
+relayed: 43727
+aborted: 9302
+dropped: 41666
+removed: 0
+delivered: 399
+delivery_prob: 0.9236
+response_prob: 0.0000
+overhead_ratio: 108.5915
+latency_avg: 2097.8797
+latency_med: 2049.9000
+hopcount_avg: 3.9323
+hopcount_med: 4
+buffertime_avg: 2420.5576
+buffertime_med: 2506.8000
+rtt_avg: NaN
+rtt_med: NaN

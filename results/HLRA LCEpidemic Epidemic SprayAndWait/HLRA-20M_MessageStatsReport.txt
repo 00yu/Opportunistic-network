@@ -1,0 +1,20 @@
+Message stats for scenario HLRA-20M
+sim_time: 43200.1000
+created: 432
+started: 55387
+relayed: 45733
+aborted: 9649
+dropped: 43867
+removed: 0
+delivered: 387
+delivery_prob: 0.8958
+response_prob: 0.0000
+overhead_ratio: 117.1731
+latency_avg: 2186.4147
+latency_med: 2102.4000
+hopcount_avg: 3.8837
+hopcount_med: 4
+buffertime_avg: 2099.6748
+buffertime_med: 2116.3000
+rtt_avg: NaN
+rtt_med: NaN

@@ -1,0 +1,20 @@
+Message stats for scenario AdvancedProphet-10M
+sim_time: 43200.1000
+created: 1461
+started: 51696
+relayed: 24886
+aborted: 26808
+dropped: 24024
+removed: 0
+delivered: 513
+delivery_prob: 0.3511
+response_prob: 0.0000
+overhead_ratio: 47.5107
+latency_avg: 5042.6273
+latency_med: 4400.0000
+hopcount_avg: 2.6140
+hopcount_med: 2
+buffertime_avg: 2704.2598
+buffertime_med: 2068.3000
+rtt_avg: NaN
+rtt_med: NaN

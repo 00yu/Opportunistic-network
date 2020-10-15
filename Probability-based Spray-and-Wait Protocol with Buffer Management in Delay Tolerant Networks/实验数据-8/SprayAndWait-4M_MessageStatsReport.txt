@@ -1,0 +1,20 @@
+Message stats for scenario SprayAndWait-4M
+sim_time: 43200.1000
+created: 1463
+started: 25997
+relayed: 9688
+aborted: 16308
+dropped: 9822
+removed: 0
+delivered: 546
+delivery_prob: 0.3732
+response_prob: 0.0000
+overhead_ratio: 16.7436
+latency_avg: 3007.5236
+latency_med: 1992.6000
+hopcount_avg: 2.4176
+hopcount_med: 2
+buffertime_avg: 2596.7662
+buffertime_med: 1943.9000
+rtt_avg: NaN
+rtt_med: NaN

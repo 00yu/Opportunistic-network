@@ -1,0 +1,841 @@
+/* 
+ * Copyright 2010 Aalto University, ComNet
+ * Released under GPLv3. See LICENSE.txt for details. 
+ */
+package routing;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import core.Connection;
+import core.DTNHost;
+import core.Message;
+import core.Settings;
+import core.SimClock;
+
+/**
+ * Implementation of Spray and wait router as depicted in 
+ * <I>Spray and Wait: An Efficient Routing Scheme for Intermittently
+ * Connected Mobile Networks</I> by Thrasyvoulos Spyropoulus et al.
+ *
+ */
+public class nSAWRouter1 extends ActiveRouter {
+	//我定义的变量
+	/** IDs of the messages that are known to have reached the final dst */
+	private Set<String> ackedMessageIds;
+	/** delivery predictability initialization constant*/
+	public static final double P_INIT = 0.75;
+	/** delivery predictability transitivity scaling constant default value */
+	public static final double DEFAULT_BETA = 0.25;
+	public static final String BETA_S = "beta";
+	/** value of beta setting */
+	private double beta;
+	/** delivery predictability aging constant */
+	public static final double GAMMA = 0.98;
+	/** the value of nrof seconds in time unit -setting */
+	 int secondsInTimeUnit;
+	 /**
+	  * Number of seconds in time unit -setting id ({@value}).
+	  * How many seconds one time unit is when calculating aging of 
+	  * delivery predictions. Should be tweaked for the scenario.*/
+	public static final String SECONDS_IN_UNIT_S ="secondsInTimeUnit";
+	public static final String SPRAY_TIMES = "spray_times";
+	public static final String SPRAY_FLAG = "spray_flag";
+	/** 生存周期 */
+	public int msgttl;
+	
+	
+	
+	/** identifier for the initial number of copies setting ({@value})*/ 
+	public static final String NROF_COPIES = "nrofCopies";
+	/** identifier for the binary-mode setting ({@value})*/ 
+	public static final String BINARY_MODE = "binaryMode";
+	/** SprayAndWait router's settings name space ({@value})*/ 
+	public static final String nSAW1_NS = "nSAWRouter1";
+	/** Message property key */
+	public static final String MSG_COUNT_PROPERTY = nSAW1_NS + "." +
+		"copies";
+	
+	protected int initialNrofCopies;
+	protected boolean isBinary;
+
+	public nSAWRouter1(Settings s) {//初始化需要配置文件中信息的变量 
+		super(s);
+		Settings nSAWSettings = new Settings(nSAW1_NS);
+		if (nSAWSettings.contains(BETA_S)) {
+			beta = nSAWSettings.getDouble(BETA_S);
+		}
+		else {
+			beta = DEFAULT_BETA;
+		}
+		initialNrofCopies = nSAWSettings.getInt(NROF_COPIES);
+		isBinary = nSAWSettings.getBoolean( BINARY_MODE);
+		secondsInTimeUnit = nSAWSettings.getInt(SECONDS_IN_UNIT_S);
+		msgttl=s.getInt("msgTtl");
+	}
+	
+	/**
+	 * Copy constructor.
+	 * @param r The router prototype where setting values are copied from
+	 */
+	protected nSAWRouter1(nSAWRouter1 r) {
+		super(r);
+		this.beta=r.beta;
+		this.initialNrofCopies = r.initialNrofCopies;
+		this.isBinary = r.isBinary;
+		this.secondsInTimeUnit=r.secondsInTimeUnit;
+		this.ackedMessageIds=new HashSet<String>();
+		this.msgttl=r.msgttl;
+	}
+	
+	/*我添加的代码*/
+	/*
+	 * 相遇节点连接建立时更新效用值
+	 * 4.这里是当本节点和其他节点刚建立连接时的操作
+	 * 比较适合用来交换历史相遇信息，更新效用值，删除一些不需要的消息等等
+	 */
+	  public void changedConnection(Connection con) { 
+		 if (con.isUp()) {
+		 DTNHost otherHost = con.getOtherNode(getHost());//获得连接的对方主机
+		 /**
+		  * ACK表，也就是每个节点都有一张ACK表记录投递成功的消息的id
+		  * 当两个节点建立连接时，交换ack表做并集，然后各自删除自己缓存中和
+		  * ack表中对应的消息
+		  */
+		 checkAck(otherHost);
+		 /**
+		  * 更新效用值，主要是节点交换和更新历史相遇信息表
+		  */
+		 countUtility(otherHost);
+	     }
+	}
+	// 更新ACK表并删除多余副本
+		private void checkAck(DTNHost otherHost) {
+
+			MessageRouter mRouter = otherHost.getRouter();
+
+			assert mRouter instanceof MaxPropRouter : "MaxProp only works "
+					+ " with other routers of same type";
+			nSAWRouter1 otherRouter = (nSAWRouter1) mRouter;
+
+			/* exchange ACKed message data */
+			this.ackedMessageIds.addAll(otherRouter.ackedMessageIds);
+			// otherRouter.ackedMessageIds.addAll(this.ackedMessageIds);
+
+			deleteAckedMessages();
+
+			// otherRouter.deleteAckedMessages();
+		}
+		/**
+		 * Deletes the messages from the message buffer that are known to be ACKed
+		 */
+		private void deleteAckedMessages() {
+			for (String id : this.ackedMessageIds) {
+				if (this.hasMessage(id) && !isSending(id)) {
+					this.deleteMessage(id, false);
+				}
+			}
+		}
+		/*
+		 * 更新效用值
+		 * (连接的两个节点同时被处理)
+		 */
+		private void countUtility(DTNHost otherHost) {
+			DTNHost sourceHost = getHost();// 本地主机
+			updateFinUtility(sourceHost, otherHost);// 主机更新效用表
+		}
+		
+		/**
+		 * 更新效用表。
+		 * @param DTNHost 邻居节点
+		 * @param interval 仿真开始到当前时间的时间间隔
+		 */
+		public void updatehu(DTNHost key,int interval) {
+			//该邻居节点不在当前节点历史效用表中
+			if(!getHost().gethu().containsKey(key))
+			{
+				
+				HashMap<Integer,Integer> dtnhash=new HashMap<Integer,Integer>();
+				dtnhash.put(interval, 1);
+				getHost().sethu(key, dtnhash);
+			}else{
+				HashMap<Integer,Integer> dtnhash=getHost().gethu().get(key);
+				//该间隔不存在
+				if(!dtnhash.containsKey(interval))
+				{
+					dtnhash.put(interval, 1);	
+				}
+				else
+				{	
+					int value=dtnhash.get(interval)+1;//更新相遇次数
+					dtnhash.put(interval,value);
+					
+				}
+				
+				getHost().sethu(key, dtnhash);
+			}
+			
+		}
+		
+		/**
+		 * 更新FIN效用表。每个节点维护一张效用表，当两节点相遇时各自会在自己效用表中更新对方节点的效用值		
+		 */
+		public void updateFinUtility(DTNHost host,DTNHost other) {			
+			//更新本地节点的信息
+			updateFinUtilityItem(host,other);
+			//更新邻居节点的信息
+			updateFinUtilityItem(other,host);
+		}
+
+		
+		//更新节点效用的方法
+		public void updateFinUtilityItem(DTNHost host,DTNHost other) {
+			//更新本节点的效用信息,坐标，时间，平均速度，平均方向，更新时间，通信范围？
+			HashMap<String, Double> dtnhash=host.getFinUtility().get(other);//获取本节点效用表中邻居节点信息
+			double hostX =other.getLocation().getX();
+			double hostY =other.getLocation().getY();//获取对方坐标
+			double hostSpeed=other.getSpeed();//获取对方速度大小
+			double Direction=getDirection(other);//预测方向
+			double avgDirection=0;
+			double count=updateDeliveryPredFor(host,other);//投递预测值
+			updateTransitivePreds(host,other);//更新传递预测值
+			if(dtnhash!=null){
+				if((double)dtnhash.get("updateTime")<SimClock.getTime()){
+					double lastDirection=dtnhash.get("avgDirection");
+					hostSpeed=(hostSpeed+dtnhash.get("avgSpeed"))/2;
+					avgDirection=(lastDirection+Direction)/2;
+				}else{
+					hostSpeed=(double)dtnhash.get("avgSpeed");
+					avgDirection=Direction;
+				}				
+			}
+			
+			HashMap<String,Double> newData=new HashMap<String,Double>();
+			newData.put("avgSpeed", hostSpeed);
+			newData.put("x", hostX);
+			newData.put("y", hostY);
+//			System.out.println("节点"+other+"角度"+avgDirection);
+			newData.put("avgDirection", avgDirection);
+			//相遇时间
+			newData.put("updateTime", SimClock.getTime());
+			newData.put("count",count);
+			host.setFinUtility(other, newData);//更新效用表		
+		}
+		
+		public double getDirection(DTNHost host) {
+			double hostX =host.getLocation().getX();
+			double hostY =host.getLocation().getY();
+			double hostX1;
+			double hostY1;
+			if(host.getDestination()==null) {
+				hostX1=hostX;
+				hostY1=hostY;
+			}
+			else {
+				hostX1=host.getDestination().getX();
+				hostY1=host.getDestination().getY();
+			}
+			return Math.atan2(hostY1-hostY,hostX1-hostX)*(180/Math.PI);
+		}
+		
+		
+		//更新历史投递效用
+		private double updateDeliveryPredFor(DTNHost host,DTNHost other) {
+			double oldValue = getPredFor(host,other);//得到旧的投递值
+			double newValue = oldValue + (1 - oldValue) * 0.75;
+			return newValue;
+		}
+		//计算传递效率
+		public double getPredFor(DTNHost host,DTNHost other) {					
+			ageDeliveryPreds(host); // 建立连接时更新衰减投递预测值
+			HashMap<String, Double> tmpHost=host.getFinUtility().get(other);
+			if (tmpHost !=null) {
+				return tmpHost.get("count");
+			}else {
+				return 0;
+			}
+		}
+		//更新传递效率
+		private void ageDeliveryPreds(DTNHost host) {
+			double timeDiff = (SimClock.getTime() - host.getlastAgeUpdate()) / secondsInTimeUnit;
+//	       	System.out.println("可以更新"+timeDiff);]
+			if (timeDiff == 0) {
+			return;
+			}
+			double mult = Math.pow(0.98, timeDiff);
+			for (HashMap.Entry<DTNHost, HashMap<String,Double>>e : host.getFinUtility().entrySet()) {
+			e.getValue().put("count",e.getValue().get("count")*mult);
+			}//更新当前节点效用表中投递概率值
+			host.setlastAgeUpdate(SimClock.getTime());
+		}
+		//更新传递投递值
+		private void updateTransitivePreds(DTNHost host,DTNHost other) {			
+			double pForHost = getPredFor(host,other); // P(a,b)
+			HashMap<DTNHost, HashMap<String,Double>>  othersPreds = other.getFinUtility();//获得对方路由的投递预测值集合
+			for (Map.Entry<DTNHost, HashMap<String,Double>> e : othersPreds.entrySet()) {
+				if (e.getKey() == host) {
+					continue; // don't add yourself
+				}		
+				double pOld = getPredFor(host,e.getKey()); // P(a,c)_old
+				double pNew = pOld + ( 1 - pOld) * pForHost * e.getValue().get("count") * beta;//beta
+//				System.out.println("old"+e.getValue().get("count")+"::new"+pNew);
+				e.getValue().put("count",pNew);
+			}
+		}
+		//历史投递效用结束	
+		/***********/
+	
+	@Override
+	public int receiveMessage(Message m, DTNHost from) {
+		return super.receiveMessage(m, from);
+	}
+	
+	@Override
+	public Message messageTransferred(String id, DTNHost from) {
+		Message msg = super.messageTransferred(id, from);
+		Integer nrofCopies = (Integer)msg.getProperty(MSG_COUNT_PROPERTY);
+		
+		assert nrofCopies != null : "Not a SnW message: " + msg;
+		
+		if (isBinary) {
+			/* in binary S'n'W the receiving node gets ceil(n/2) copies */
+			nrofCopies = (int)Math.ceil(nrofCopies/2.0);
+		}
+		else {
+			/* in standard S'n'W the receiving node gets only single copy */
+			nrofCopies = 1;
+		}
+		
+		msg.updateProperty(MSG_COUNT_PROPERTY, nrofCopies);
+		
+		/* was this node the final recipient of the message? */
+		if (isDeliveredMessage(msg)) {
+			this.ackedMessageIds.add(id);
+		}
+		
+		return msg;
+	}
+	
+	@Override 
+	public boolean createNewMessage(Message msg) {
+		makeRoomForNewMessage(msg.getSize());
+
+		msg.setTtl(this.msgTtl);
+		msg.addProperty(SPRAY_TIMES,0);//添加喷发启始次数
+		msg.addProperty(SPRAY_FLAG,0);//添加喷发标识0-喷发中 1-启动喷发
+		msg.addProperty(MSG_COUNT_PROPERTY, new Integer(initialNrofCopies));
+		addToMessages(msg, true);
+		return true;
+	}
+	
+	@Override
+	public void update() {
+		super.update();
+		if (!canStartTransfer() || isTransferring()) {
+			return; // nothing to transfer or is currently transferring 
+		}
+
+		/* try messages that could be delivered to final recipient */
+		if (exchangeDeliverableMessages() != null) {
+			return;
+		}
+		/**
+		 * 1.获得未喷发过且当前的副本数为一的消息
+		 * 因为saw是通过消息的副本数量来区分是该消息处于等待阶段
+		 * 或是喷发阶段。
+		 * 所以这里的方法主要是来筛选出各个阶段的消息，方便后面做不同的处理。
+		 * 比如上面的copiesLeft就是喷发阶段的消息,而copiesOne是等待阶段的消息
+		 */
+		/*喷发阶段消息*/
+		@SuppressWarnings(value = "unchecked")
+		List<Message> copiesLeft = sortByQueueMode(getMessagesWithCopiesLeft());
+		@SuppressWarnings(value ="unchecked")
+		/*等待阶段消息*/
+		List<Message> copiesOne = sortByQueueMode(getMessagesWithCopiesOne());
+		/*再次喷发消息*/
+		@SuppressWarnings(value ="unchecked")
+		List<Message> copiesBin = sortByQueueMode(getMessagesWithCopiesBin());
+		
+		/**
+		 * 2.处理喷发阶段的消息
+		 * 下面的三个if是针对上面不同阶段的消息（copiesLeft，copiesOne，copiesBin）
+		 * 应用不同的策略去处理,比如下面第一个策略
+		 */
+		if (copiesLeft.size() > 0) {
+			/*喷发阶段：向邻居节点分发这些消息*/
+			this.tryMessagesToConnectionsFin(copiesLeft, getConnections());
+		}
+		//等待阶段：等待阶段副本为一再次喷发
+		if(copiesOne.size() > 0){//自写代码	
+
+			this.tryMessagesToConnectionsWait(copiesOne, getConnections());	
+		}
+		//等待阶段副本大于一再次喷发
+		if (copiesBin.size() > 0) {
+			/*向邻居节点二分分发这些消息*/
+			this.tryMessagesToConnectionsWait(copiesBin, getConnections());
+		}
+	}
+	
+	/**
+	 * Creates and returns a list of messages this router is currently
+	 * carrying and still has copies left to distribute (nrof copies > 1).
+	 * @return A list of messages that have copies left
+	 */
+	protected List<Message> getMessagesWithCopiesLeft() {
+		List<Message> list = new ArrayList<Message>();
+
+		for (Message m : getMessageCollection()) {
+			Integer nrofCopies = (Integer)m.getProperty(MSG_COUNT_PROPERTY);
+			assert nrofCopies != null : "SnW message " + m + " didn't have " + 
+				"nrof copies property!";
+			Integer sprayTimes = (Integer)m.getProperty(SPRAY_TIMES);
+			if (nrofCopies > 1 && sprayTimes==0) {//sprayTimes==0意思是没有设定再次喷发数，即处于第一次喷发时期
+				list.add(m);
+			}
+		}
+		
+		return list;
+	}
+	
+	 /********我写的代码******/
+	
+		/**
+		 * 创建并返回当前路由携带和需要转发的消息副本的消息列表（节点副本数>1）二进制
+		 * 再次喷发消息副本的消息列表
+		 */
+		protected List<Message> getMessagesWithCopiesBin() {
+			List<Message> list = new ArrayList<Message>();
+			for (Message m : getMessageCollection()) {
+				Integer nrofCopies = (Integer)m.getProperty(MSG_COUNT_PROPERTY);//得到消息副本数量的属性
+				assert nrofCopies != null : "SnW message " + m + " didn't have " + 
+					"nrof copies property!";
+				Integer sprayTimes = (Integer)m.getProperty(SPRAY_TIMES);	
+				if (nrofCopies > 1 && sprayTimes>0) {
+					list.add(m);
+				}
+			}
+			return list;
+		}
+		
+		/**
+		 * 创建并返回当前路由携带的节点副本数为一的消息副本的消息列表
+		 */
+		protected List<Message> getMessagesWithCopiesOne() {
+			List<Message> list = new ArrayList<Message>();
+
+			for (Message m : getMessageCollection()) {
+				Integer nrofCopies = (Integer)m.getProperty(MSG_COUNT_PROPERTY);//得到消息副本数量的属性
+				assert nrofCopies != null : "SnW message " + m + " didn't have " + 
+					"nrof copies property!";
+				
+				Integer sprayTimes = (Integer)m.getProperty(SPRAY_TIMES);//得到消息转发次数
+			
+					if (nrofCopies == 1 &&sprayTimes<2) {//开销大（解决）增加喷发次数
+						m.updateProperty(SPRAY_TIMES,sprayTimes+1);
+						m.updateProperty(SPRAY_FLAG,1);
+						list.add(m);				
+					}
+			}	
+			return list;
+		}
+		/***********/
+	
+		
+		
+		/**我写的代码***/
+		
+		/***
+		 *FIN
+		 *给每个消息分发连接集合,根据ActiveRouter中tryMessagesToConnections改写
+		 */
+		protected Message tryMessagesToConnectionsFin(List<Message> messages,
+				List<Connection> connections) {
+			for (int i=0, n=messages.size(); i<n; i++) {
+				Message msg = messages.get(i);
+				Connection started = tryAllConnection(msg, connections); 
+				if (started != null) { 
+					return msg;
+				}
+			}
+			return null;
+		}
+		//等待阶段 需要改写
+		protected Connection tryMessagesToConnectionsWait(List<Message> messages,
+				List<Connection> connections)  {
+			for (int i=0, n=connections.size(); i<n; i++) {
+				Connection con = connections.get(i);
+				Message started;
+				try {
+					started = trySprayAgainMessages(con, messages);
+					if (started != null) { 
+						return con;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				} 
+				
+			}
+			
+			return null;
+		}
+		
+		/**
+		 *FIN
+		 *3.这里将每个消息发送给合适连接集合
+		 *这个方法的参数是一个消息和这个节点的所有连接，
+		 *那么这里就比较适合筛选出每个消息合适的中继节点。
+		 *
+		 * 比如说选出所有邻居节点中离消息的目的节点最近的，
+		 * 就可以遍历所有连接，得到每个连接的邻居节点的位置，
+		 * 然后得到消息的目的节点的位置，再做比较，选出最合适的连接
+		 */
+		protected Connection tryAllConnection(Message msg, List<Connection> connections) {
+			 
+			List<Connection> finalconnections=new ArrayList<Connection> ();
+			if(connections.size()<=1)//只有一个连接，消息直接投递给这个连接的对方节点
+				finalconnections=connections;
+			else//多个连接采用不同的策略筛选出较好的几个连接
+				finalconnections=getConnectionByStrategy(msg,connections);
+			//给每个连接传输该消息
+	   	     for (Connection con : finalconnections) {
+	   	    	
+				int retVal = startTransfer(msg, con); 
+				
+				if (retVal == RCV_OK) {
+					return con;	// accepted a message, don't try others
+				}else if (retVal > 0) { 
+					return null; // should try later -> don't bother trying others
+				}
+				
+			
+			}
+			
+			return null; // no message was accepted		
+		}
+		/**
+		 * FIN
+		 * 根据不同的策略去选择不同的方法选择合适的连接
+		 */
+		protected List<Connection>  getConnectionByStrategy(Message msg, List<Connection> connections) {
+			List<Connection> newConnections=new ArrayList<Connection>();
+			DTNHost destination=msg.getTo();//消息目的节点	
+			HashMap<Double,Connection> history= new HashMap<Double,Connection >();//邻居节点和目的节点历史相遇次数
+			HashMap<String,Double> destinationInfo=new HashMap<String,Double>();//消息目的节点信息
+			double maxupdateTime=0;//邻居节点与目的节点最后一次相遇时间最大的时间(邻居节点最近和目的节点相遇的时间)
+			for (Connection con : connections) {
+				DTNHost other= con.getOtherNode(getHost());//获取邻居节点
+				HashMap<DTNHost, HashMap<String,Double>> otherFinUtility=other.getFinUtility();//获取邻居节点信息表
+				//获得目的节点和邻居节点历史相遇信息
+				if(otherFinUtility.containsKey(destination)){
+					if(otherFinUtility.get(destination).get("updateTime")>maxupdateTime){
+						destinationInfo=otherFinUtility.get(destination);
+						maxupdateTime=destinationInfo.get("updateTime");
+					}
+					history.put(otherFinUtility.get(destination).get("count"),con);
+				}
+			}
+			
+			if(history.isEmpty()){
+				newConnections=getConnectionByAngle(msg,connections);//没有历史相遇信息，根据角度
+			}else{//有历史相遇信息
+				//根据目的节点的活动范围，找出能够最快投递到目的节点的活动范围的节点
+				newConnections=getConnectionByRange(destinationInfo,connections);
+				if(newConnections.isEmpty()){//不存在这样的节点,就根据历史相遇次数
+			    	newConnections=getConnectionByHistory(destination,history,connections);
+			    }
+			}
+			return newConnections;
+		}
+		/**
+		 * FIN
+		 * 根据邻居节点角度，找出角度不同的节点集合
+		 */
+		protected List<Connection>  getConnectionByAngle(Message msg, List<Connection> connections) {
+			List<Connection> newConnections=new ArrayList<Connection>();
+			Connection ul=null;//上左90 - 180
+			Connection ur=null;//上右0 - 90
+			Connection dl=null;//下左-90 - -180
+			Connection dr=null;//下右0 - -90
+			double ulmin=46,urmin = 46,dlmin=46,drmin=46;
+				for (Connection con : connections) {
+					DTNHost other= con.getOtherNode(getHost());
+					double otherAngle=getHost().getFinUtility().get(other).get("avgDirection");
+					if(otherAngle>0&&otherAngle<=90){//上右
+							if(Math.abs(otherAngle-45)<urmin){
+								urmin=Math.abs(otherAngle-45);
+								ur=con;
+							}		
+					}else if(90<otherAngle&&otherAngle<=180){//上左
+						
+							if(Math.abs(otherAngle-135)<ulmin){
+								ulmin=Math.abs(otherAngle-135);
+								ul=con;			
+						}
+					}else if(0>otherAngle&&otherAngle>=-90){//下右
+						
+							if(Math.abs(otherAngle+45)<drmin){
+								drmin=Math.abs(otherAngle+45);
+								dr=con;		
+						}
+					}else if(-90>otherAngle&&otherAngle>=-180){//下左	
+							if(Math.abs(otherAngle+135)<dlmin){
+								dlmin=Math.abs(otherAngle+135);
+								dl=con;
+							}
+					}	
+				}
+				if(ul!=null)
+					newConnections.add(ul);
+				if(ur!=null)
+					newConnections.add(ur);
+				if(dr!=null)
+					newConnections.add(dr);
+			    if(dl!=null)
+					newConnections.add(dl);
+				return newConnections;
+		}
+		/**
+		 * FIN
+		 * 根据邻居节点与目的节点的历史相遇次数，找出效用最好的的节点集合
+		 */
+		protected List<Connection>  getConnectionByHistory(DTNHost destination, HashMap<Double,Connection> history,List<Connection> connections) {
+			List<Connection> newConnections=new ArrayList<Connection>();
+			//源节点本身与目的节点的相遇次数
+			HashMap<DTNHost, HashMap<String,Double>> hostFinUtility=getHost().getFinUtility();
+			if(hostFinUtility.containsKey(destination)){
+				history.put(hostFinUtility.get(destination).get("count"),null);
+			}
+			Object[] key_arr = history.keySet().toArray();   
+			Arrays.sort(key_arr);
+			for(int i=key_arr.length-1;i>=0;i--){
+				if(history.get(key_arr[i])!=null){
+					newConnections.add(history.get(key_arr[i]));
+				}else{
+					break;
+				}
+					
+			}	
+			return newConnections;	
+		}
+		/**
+		 * FIN
+		 * 根据目的节点移动的范围选择合适的中继节点
+		 */
+		protected List<Connection>  getConnectionByRange(HashMap<String,Double>  destinationInfo, List<Connection> connections) {
+			List<Connection> newConnections=new ArrayList<Connection>();
+			//计算目的节点现在的范围
+			double  desavgSpeed=(double)destinationInfo.get("avgSpeed");
+			double  desx=(double)destinationInfo.get("x");
+			double  desy=(double)destinationInfo.get("y");
+			double  desupdateTime=(double)destinationInfo.get("updateTime");
+			double  desavgDirection=(double)destinationInfo.get("avgDirection");
+			double  timediff=SimClock.getTime()-desupdateTime;
+			double  radius=timediff*desavgSpeed;//直径
+			//判断源节点是否在目的节点的活动范围内
+			DTNHost source=getHost();
+			double sourcex=source.getLocation().getX();
+			double sourcey=source.getLocation().getY();
+			double sourceDistance= Math.sqrt(Math.pow(sourcex - desx,2)+Math.pow(sourcey - desy,2));//斜边
+			//源节点不在活动范围内(有效)
+			if(sourceDistance>radius){
+			HashMap<Double,Connection> upperBound=new HashMap<Double,Connection>();//上界集合
+			HashMap<Double,Connection> lowerBound=new HashMap<Double,Connection>();//下界集合
+			for (Connection con : connections) {
+				DTNHost other= con.getOtherNode(source);
+				HashMap<String,Double> otherinfo=source.getFinUtility().get(other);
+				double otherx=(double)otherinfo.get("x");
+				double othery=(double)otherinfo.get("y");
+				double otheravgSpeed=(double)otherinfo.get("avgSpeed");
+				double otheravgDirection=(double)otherinfo.get("avgDirection");
+				double centerAngle=Math.atan2(othery-desy,otherx-desx)*(180/Math.PI);//中心角度
+				double hypotenuse= Math.sqrt(Math.pow(otherx - desx,2)+Math.pow(othery - desy,2));//斜边
+				double offsetAngle=Math.asin(radius/hypotenuse)*(180/Math.PI);//角度范围
+				double distanceTmp=Math.pow(hypotenuse,2)-Math.pow(radius,2);
+				double distance=Math.sqrt(Math.abs(distanceTmp));//到切点的距离
+				//建立两个集合，集合根据移动方向，速度，距离
+				double upperAngle=centerAngle+offsetAngle;//上边界角度
+				double lowerAngle=centerAngle-offsetAngle;//下边界角度
+				double commonUtility=1/otheravgSpeed+distance;
+				if(distanceTmp<0){//邻居不在目的节点活动范围内		
+				  if(otheravgDirection<=upperAngle&&otheravgDirection>=lowerAngle){
+				     double utility=Math.abs(upperAngle-otheravgDirection)+commonUtility;
+				     upperBound.put(utility, con);
+				     utility=Math.abs(lowerAngle-otheravgDirection)+commonUtility;
+				     lowerBound.put(utility, con);
+				  }  
+				}else{
+					  upperBound.put(commonUtility, con);
+					  lowerBound.put(commonUtility, con);
+				}
+			}
+			//选出两个集合第一个
+			Connection tmpCon=null;
+			if(desavgDirection>0){
+				//上界集合不为空
+				if(!upperBound.isEmpty()){
+					Object[] key_upper = upperBound.keySet().toArray();   
+					Arrays.sort(key_upper); 
+					 tmpCon=upperBound.get(key_upper[0]);
+					if(tmpCon!=null ){
+						 newConnections.add(tmpCon);
+					}
+				}
+				//下界集合不为空
+				if(!lowerBound.isEmpty()){
+					Object[] key_lower = lowerBound.keySet().toArray();   
+					Arrays.sort(key_lower); 
+					if(lowerBound.get(key_lower[0])!=null ){
+					   if(tmpCon !=lowerBound.get(key_lower[0])){
+						   newConnections.add(lowerBound.get(key_lower[0]));  //上界和下界选择的连接不同则直接添加
+					   }else if(key_lower.length>1){
+						   newConnections.add(lowerBound.get(key_lower[1]));//选择的下界连接与上界连接相同，且下界连接大于1则将下界的第二个连接加入	  
+					   }
+					}
+				}	
+			}else{
+				//下界集合不为空
+				if(!lowerBound.isEmpty()){
+					Object[] key_lower = lowerBound.keySet().toArray();   
+					Arrays.sort(key_lower); 
+					 tmpCon=lowerBound.get(key_lower[0]);
+					if(tmpCon!=null ){
+						
+						 newConnections.add(tmpCon);
+					}
+				}
+				//上界集合不为空
+				if(!upperBound.isEmpty()){
+					Object[] key_upper = upperBound.keySet().toArray();   
+					Arrays.sort(key_upper); 
+					if(upperBound.get(key_upper[0])!=null ){
+					   if(tmpCon !=upperBound.get(key_upper[0])){
+						   newConnections.add(upperBound.get(key_upper[0]));  
+					   }else if(key_upper.length>1){
+						   newConnections.add(upperBound.get(key_upper[1]));
+					   }
+					}
+				}	
+			}
+		}
+			return newConnections;
+		}
+		/**
+		 * FIN
+		 *等待阶段再次喷发策略 
+		 */
+		protected Message trySprayAgainMessages(Connection con, List<Message> messages) throws Exception
+		{//根据效用复制
+			DTNHost otherNode =con.getOtherNode(getHost());//获得对方节点
+			
+			for (Message m : messages) {
+				Integer sprayFlag = (Integer)m.getProperty(SPRAY_FLAG);//得到消息转发标志
+				Integer copies=(Integer)m.getProperty(MSG_COUNT_PROPERTY);
+				if(sprayFlag==1){
+					copies=resetCopies((2),m.getSize(),otherNode);//根据拥塞情况获得再次喷发的副本数
+				}
+				if(copies != 0){		
+				if(otherNode.getFinUtility().containsKey(m.getTo()))//判断邻居节点中目的节点的效用是否存在
+				{
+					if(getHost().getFinUtility().containsKey(m.getTo()))//判断当前节点中目的节点的效用是否存在
+					{
+						double otherCount=otherNode.getFinUtility().get(m.getTo()).get("count");
+						double hostCount=getHost().getFinUtility().get(m.getTo()).get("count");
+						boolean utility_check=hostCount < otherCount;
+						if(utility_check){//当前节点与目的节点相遇次数小于邻居节点与目的节点相遇次数
+							m.updateProperty(MSG_COUNT_PROPERTY,copies);
+							int retVal = startTransfer(m, con); 
+							if (retVal == RCV_OK) {
+								m.updateProperty(SPRAY_FLAG,0);//开始持续喷发
+								return m;	
+							}else if (retVal > 0) { 
+								return null; 
+							}
+							
+						}else{//否则不转发
+							return null;
+						}
+					}else{//当前节点中没有目的节点信息，直接转发
+							m.updateProperty(MSG_COUNT_PROPERTY,copies);
+							int retVal = startTransfer(m, con); 
+							if (retVal == RCV_OK) {
+								m.updateProperty(SPRAY_FLAG,0);//开始持续喷发
+								return m;	// accepted a message, don't try others
+							}else if (retVal > 0) { 
+								return null; // should try later -> don't bother trying others
+							}
+					}
+				}else{//邻居节点没有目的节点信息则不转发
+					return null;
+				}
+				}
+			}
+			return null; // no message was accepted		
+		}
+		
+		//计算拥塞，获得副本数
+	protected int resetCopies(int num,int size,DTNHost otherNode){
+				double totalsize = 0.0;
+				double freesize = 0.0;
+				for (int i=0, n=getConnections().size(); i<n; i++) {
+					Connection con = getConnections().get(i);
+					DTNHost othernode=con.getOtherNode(getHost());
+					totalsize+=othernode.getRouter().getBufferSize();
+					freesize+=othernode.getRouter().getFreeBufferSize();
+				}
+					double prob=(totalsize-freesize)/totalsize;
+					if(prob>=0.7){
+						num=0;
+					}else if(prob>=0.5){
+						num=(int)Math.ceil(num*(1-prob));//向上取整
+					}else if(prob>=0.2){
+						num++;
+					}else{
+						num*=2;	  
+					}
+				if(num*size>freesize){
+					num=(int)Math.ceil(freesize/size)/2;
+				}
+				if(num%2!=0)//逻辑上不能为一
+					num++;
+				return num;	
+			}
+	/**
+	 * Called just before a transfer is finalized (by 
+	 * {@link ActiveRouter#update()}).
+	 * Reduces the number of copies we have left for a message. 
+	 * In binary Spray and Wait, sending host is left with floor(n/2) copies,
+	 * but in standard mode, nrof copies left is reduced by one. 
+	 */
+	@Override
+	protected void transferDone(Connection con) {
+		Integer nrofCopies;
+		String msgId = con.getMessage().getId();
+		/* get this router's copy of the message */
+		Message msg = getMessage(msgId);
+
+		if (msg == null) { // message has been dropped from the buffer after..
+			return; // ..start of transfer -> no need to reduce amount of copies
+		}
+		
+		/* reduce the amount of copies left */
+		nrofCopies = (Integer)msg.getProperty(MSG_COUNT_PROPERTY);
+		if (isBinary) { 
+			nrofCopies /= 2;
+		}
+		else {
+			nrofCopies--;
+		}
+		msg.updateProperty(MSG_COUNT_PROPERTY, nrofCopies);
+	}
+	
+	@Override
+	public nSAWRouter1 replicate() {
+		return new nSAWRouter1(this);
+	}
+}
